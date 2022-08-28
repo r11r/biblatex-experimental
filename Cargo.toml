@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-unicode-normalization = "0.1.20"
+unicode-normalization = "0.1"
+unicode-ident = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+quick-xml = { version = "0.23", features = ["serialize"] }
 
 [dev-dependencies]
 criterion = "0.3.6"

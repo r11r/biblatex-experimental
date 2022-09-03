@@ -24,7 +24,7 @@ macro_rules! fail {
 
 #[derive(Debug)]
 pub(super) struct Parser<'de>{
-    input: &'de Input,
+    input: &'de Input<'de>,
     index: usize,
     saved_index: usize,
 }
@@ -253,15 +253,15 @@ impl<'de> Parser<'de>{
                 (_, other) => fail!(TokenContext::Global, other, self.trace_last()),
             };
 
-            if entrytype.str.eq_ignore_ascii_case("comment") {
+            if entrytype.str.eq_ignore_ascii_case("comment") || entrytype.str.eq_ignore_ascii_case("preface") {
                 match closing_braket {
                     b'}' => self.close_brace().map_err(map_err!(TokenContext::Comment(entrytype.trace()), self.trace_last()))?,
                     b')' => self.close_parenthesis().map_err(map_err!(TokenContext::Comment(entrytype.trace()), self.trace_last()))?,
                     _ => unreachable!(),
                 }
                 
-            } else if entrytype.str.eq_ignore_ascii_case("preface") {
-                todo!("@preface");
+            // } else if entrytype.str.eq_ignore_ascii_case("preface") {
+            //     todo!("@preface");
 
             } else if entrytype.str.eq_ignore_ascii_case("string") {
                 
@@ -296,6 +296,8 @@ impl<'de> Parser<'de>{
                 }
 
             } else {
+                self.peek_after_whitespace();
+
                 let (key, mut next) = self.parse_identifier();
 
                 if let Some(other) = bib.entries.get(key.str) {

@@ -1,4 +1,5 @@
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 
@@ -6,16 +7,16 @@ mod parse;
 
 
 #[derive(Debug)]
-pub struct Input {
-    name: String,
-    content: String,
+pub struct Input<'de> {
+    name: Cow<'de, str>,
+    content: Cow<'de, str>,
 }
 
-impl Input {
+impl<'de> Input<'de> {
     pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, std::io::Error> {
         Ok(Input {
-            name: path.as_ref().to_string_lossy().into_owned(),
-            content: std::fs::read_to_string(path)?,
+            name: Cow::Owned(path.as_ref().to_string_lossy().into_owned()),
+            content: Cow::Owned(std::fs::read_to_string(path)?),
         })
     }
 
@@ -33,7 +34,7 @@ impl Input {
         // count unicode chars in line content
         let col = self.content[start..=offset].chars().count() as u32;
         // full human-friendly trace information
-        InputTrace{name: self.name.clone(), line, col}
+        InputTrace{name: self.name.clone().into_owned(), line, col}
     }
 }
 
@@ -47,7 +48,7 @@ pub struct InputTrace {
 #[derive(Debug, Clone)]
 struct InputSlice<'de> {
     r#str: &'de str,
-    input: &'de Input,
+    input: &'de Input<'de>,
     offset: usize,
 }
 
@@ -135,30 +136,4 @@ impl<'de> RawBibliography<'de> {
 
 
 #[cfg(test)]
-mod tests {
-
-    fn test_file(file: &str) -> std::path::PathBuf {
-        let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test");
-        path.push(file);
-        path
-    }
-
-    #[test]
-    fn biber_benchmark() {
-
-        let inputs = vec![
-            super::Input::from_file(test_file("biber-benchmark-definitions.bib")).unwrap(),
-            super::Input::from_file(test_file("biber-benchmark-papers.bib")).unwrap(),
-        ];
-
-        let mut bib = super::RawBibliography::new();
-        for input in &inputs {
-            bib.add_bibtex_resource(input).unwrap();
-        }
-
-        assert_eq!(bib.macros.len(), 635);
-        assert_eq!(bib.entries.len(), 2157);
-    }
-}
-
+mod tests;
